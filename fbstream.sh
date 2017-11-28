@@ -1,35 +1,52 @@
 #!/bin/bash -e
 
-GROUP_ID=me
+INFO(){ echo "ERRO: $*"; }
+ERRO(){ echo "ERRO: $*"; exit 1; }
+
+export VIDEO_ID
+export STREAM_URL
+export RESOURCE_ID
+export TMP_FILE
+export ACCESS_TOKEN
+
+RESOURCE_ID=me
 TMP_FILE="$(mktemp -u)"
 ACCESS_TOKEN=""
 
-CURL_POST_W(){
-        curl -s -X POST -F "access_token=$ACCESS_TOKEN" "$@"
-}
 
-CURL_POST_W "https://graph.facebook.com/$GROUP_ID/live_videos" \
+CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
+CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
+
+# Check basic binaries
+for cmd in curl jq ffmpeg; do
+        command -v $cmd &> /dev/null || ERRO "Missing $cmd"
+done
+
+# Get Live URL & etc
+CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
         -F "title=PRON" \
         -F "stream_type=AMBIENT" \
         -F "status=UNPUBLISHED" > $TMP_FILE
 
+# Define auto cleanup on exit
 cleanup(){
-        CURL_POST_W "https://graph.facebook.com/$ID" -F "end_live_video=true" | jq
+        CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "end_live_video=true" | jq .
+        CURL_DELETE_W "https://graph.facebook.com/$VIDEO_ID" | jq .
         rm -f $TMP_FILE
 }
 trap cleanup SIGINT SIGTERM EXIT
 
+jq . $TMP_FILE
+VIDEO_ID="$(jq .id -r $TMP_FILE)"
+STREAM_URL="$(jq .stream_url -r $TMP_FILE)"
+rm -f "$TMP_FILE"
 
-jq < $TMP_FILE
-ID=$(jq .id -r < $TMP_FILE)
-STREAM_URL="$(jq .stream_url -r < $TMP_FILE)"
-rm -f $TMP_FILE
-
+# Start stream
 {
         readonly FPS=30
         readonly KEY_FRAME_AT=$(($FPS*1))
         readonly THREADS=$(nproc)
-        readonly SOURCE_URL='rtsp://hostname'
+        readonly SOURCE_URL='rtsp://hostname/url'
 
         echo "---"
         echo "Source URL: $SOURCE_URL"
@@ -48,16 +65,12 @@ rm -f $TMP_FILE
         echo "--- END ---"
 } &
 
+# Mark stream as Active
 sleep 5
+CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW" | jq .
 
-CURL_POST_W "https://graph.facebook.com/$ID" -F "status=LIVE_NOW" | jq
+systemd-notify --ready
 
 wait
-#sleep 720
-
-#killall ffmpeg
 
 exit 0
-#curl -k -X POST "https://graph.facebook.com/$ID" \
-#        -F "access_token=$ACCESS_TOKEN" \
-#        -F "fields=dash_preview_url" | jq
