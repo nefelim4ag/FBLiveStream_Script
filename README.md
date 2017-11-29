@@ -13,4 +13,5 @@ make install
 
 # Configuration
 See /etc/fbstream
+
 All working config files must be named like *.conf
