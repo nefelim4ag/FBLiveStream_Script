@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-INFO(){ echo "ERRO: $*"; }
+INFO(){ echo "INFO: $*"; }
 ERRO(){ echo "ERRO: $*"; exit 1; }
 
 export VIDEO_ID
