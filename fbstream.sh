@@ -31,13 +31,13 @@ CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
 
 stream_start(){
         CONF="$1"
-        . $CONF
+        . "$CONF"
 
         TMP_FILE="$(mktemp)"
 
         # Get Live URL & etc
         CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
-                -F "title=PRON" \
+                -F "title=$STREAM_NAME" \
                 -F "stream_type=AMBIENT" \
                 -F "status=UNPUBLISHED" > $TMP_FILE
 
