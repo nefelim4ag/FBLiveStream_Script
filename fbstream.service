@@ -6,7 +6,7 @@ After=network-online.target
 [Service]
 Type=notify
 
-ExecStart=/usr/bin/fbstream.sh
+ExecStart=/usr/bin/fbstream
 
 Nice=19
 OOMScoreAdjust=-999
