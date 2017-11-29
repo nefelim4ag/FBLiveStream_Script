@@ -31,7 +31,7 @@ CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
 
 stream_start(){
         CONF="$1"
-        . "$CONF"
+        source "$CONF"
 
         TMP_FILE="$(mktemp)"
 
