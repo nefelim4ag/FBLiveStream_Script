@@ -72,11 +72,14 @@ stream_start(){
         # Mark stream as Active
         sleep 3
         CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW" | jq .
+
+        wait
 }
 
 # Start all streams
 for conf in "${CONFIGS[@]}"; do
-        stream_start "$conf"
+        stream_start "$conf" &
+        sleep 3
 done
 
 systemd-notify --ready
