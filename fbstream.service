@@ -1,0 +1,21 @@
+[Unit]
+Description=Script for Streaming to Facebook
+After=network.target
+After=network-online.target
+
+[Service]
+Type=notify
+
+ExecStart=/usr/bin/fbstream.sh
+
+Nice=19
+OOMScoreAdjust=-999
+
+Restart=always
+
+PrivateTmp=true
+CPUAccounting=true
+MemoryAccounting=true
+
+[Install]
+WantedBy=multi-user.target

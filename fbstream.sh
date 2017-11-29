@@ -9,65 +9,75 @@ export RESOURCE_ID
 export TMP_FILE
 export ACCESS_TOKEN
 
-RESOURCE_ID=me
-TMP_FILE="$(mktemp -u)"
-ACCESS_TOKEN=""
-
-
-CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
-CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
+export THREADS
+export SOURCE_URL
+export STREAM_URL
 
 # Check basic binaries
 for cmd in curl jq ffmpeg; do
         command -v $cmd &> /dev/null || ERRO "Missing $cmd"
 done
 
-# Get Live URL & etc
-CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
-        -F "title=PRON" \
-        -F "stream_type=AMBIENT" \
-        -F "status=UNPUBLISHED" > $TMP_FILE
+CONFIGS=(
+        $(find /etc/fbstream -type f -name "*.conf")
+)
 
-# Define auto cleanup on exit
-cleanup(){
-        CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "end_live_video=true" | jq .
-        CURL_DELETE_W "https://graph.facebook.com/$VIDEO_ID" | jq .
-        rm -f $TMP_FILE
+for conf in "${CONFIGS[@]}"; do
+        INFO "Find conf: $conf"
+done
+
+CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
+CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
+
+stream_start(){
+        CONF="$1"
+        . $CONF
+
+        TMP_FILE="$(mktemp)"
+
+        # Get Live URL & etc
+        CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
+                -F "title=PRON" \
+                -F "stream_type=AMBIENT" \
+                -F "status=UNPUBLISHED" > $TMP_FILE
+
+        jq . $TMP_FILE
+        VIDEO_ID="$(jq .id -r $TMP_FILE)"
+        STREAM_URL="$(jq .stream_url -r $TMP_FILE)"
+        rm -f "$TMP_FILE"
+
+        # Define auto cleanup on exit
+        cleanup(){
+                CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "end_live_video=true" | jq .
+                CURL_DELETE_W "https://graph.facebook.com/$VIDEO_ID" | jq .
+
+                # Delete all posts
+                POSTS=(
+                        $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/feed?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
+                )
+                for id in "${POSTS[@]}"; do
+                        CURL_DELETE_W "https://graph.facebook.com/$id"
+                done
+        }
+        trap cleanup SIGINT SIGTERM EXIT
+
+        {
+                INFO "--- START ---"
+                INFO "Source URL: $SOURCE_URL"
+                INFO "Target URL: $STREAM_URL"
+                run_stream "$SOURCE_URL" "$STREAM_URL"
+                echo "--- END ---"
+        } &
+
+        # Mark stream as Active
+        sleep 3
+        CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW" | jq .
 }
-trap cleanup SIGINT SIGTERM EXIT
 
-jq . $TMP_FILE
-VIDEO_ID="$(jq .id -r $TMP_FILE)"
-STREAM_URL="$(jq .stream_url -r $TMP_FILE)"
-rm -f "$TMP_FILE"
-
-# Start stream
-{
-        readonly FPS=30
-        readonly KEY_FRAME_AT=$(($FPS*1))
-        readonly THREADS=$(nproc)
-        readonly SOURCE_URL='rtsp://hostname/url'
-
-        echo "---"
-        echo "Source URL: $SOURCE_URL"
-        echo "Target URL: $STREAM_URL"
-        echo "--- START ---"
-        ffmpeg  -y \
-                -re  -rtsp_flags prefer_tcp  -i "$SOURCE_URL" \
-                -f lavfi -i anullsrc=channel_layout=mono:sample_rate=44100 \
-                -t 5400 -c:a copy -c:a aac -ac 1 -ar 44100 -b:a 16k \
-                -c:v libx264 -pix_fmt yuv420p \
-                -preset veryfast \
-                -crf "$FPS" -r "$FPS" -g "$KEY_FRAME_AT" \
-                -s 1280x720  -minrate 1024k -vb 2048k -maxrate 3072k -bufsize 8192k \
-                -threads "$THREADS" \
-                -f flv "${STREAM_URL}"
-        echo "--- END ---"
-} &
-
-# Mark stream as Active
-sleep 5
-CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW" | jq .
+# Start all streams
+for conf in "${CONFIGS[@]}"; do
+        stream_start "$conf"
+done
 
 systemd-notify --ready
 

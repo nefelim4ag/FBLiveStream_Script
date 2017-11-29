@@ -1,0 +1,39 @@
+# FB App Access Token
+ACCESS_TOKEN=""
+
+# Target page
+# me - create stream on the bot app page
+# You can put numerical group ID or other page ID in theory
+RESOURCE_ID="me"
+
+# Visible stream name
+STREAM_NAME="Test_Stream"
+
+# Source url - where read data
+SOURCE_URL='rtsp://hostname/url'
+
+# Coding threads count
+THREADS=$(nproc)
+
+# Stream function, must accept 2 parms
+# First - Source stream url
+# Second - Dest stream url
+# Don't change function name!
+run_stream(){
+        readonly FPS=30
+        readonly KEY_FRAME_AT=$(($FPS*1))
+
+        SOURCE_URL="$1"
+        STREAM_URL="$2"
+
+        ffmpeg  -y \
+                -re  -rtsp_flags prefer_tcp  -i "$SOURCE_URL" \
+                -f lavfi -i anullsrc=channel_layout=mono:sample_rate=44100 \
+                -t 5400 -c:a copy -c:a aac -ac 1 -ar 44100 -b:a 16k \
+                -c:v libx264 -pix_fmt yuv420p \
+                -preset veryfast \
+                -crf "$FPS" -r "$FPS" -g "$KEY_FRAME_AT" \
+                -s 1280x720  -minrate 1024k -vb 2048k -maxrate 3072k -bufsize 8192k \
+                -threads "$THREADS" \
+                -f flv "${STREAM_URL}"
+}
