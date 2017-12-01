@@ -26,12 +26,11 @@ run_stream(){
         SOURCE_URL="$1"
         STREAM_URL="$2"
 
-        ffmpeg  -y \
-                -re  -rtsp_flags prefer_tcp  -i "$SOURCE_URL" \
+        ffmpeg  -y -thread_queue_size 512 \
+                -rtsp_flags prefer_tcp  -i "$SOURCE_URL" \
                 -f lavfi -i anullsrc=channel_layout=mono:sample_rate=44100 \
                 -t 5400 -c:a copy -c:a aac -ac 1 -ar 44100 -b:a 16k \
-                -c:v libx264 -pix_fmt yuv420p \
-                -preset veryfast \
+                -c:v libx264 -preset veryfast \
                 -crf "$FPS" -r "$FPS" -g "$KEY_FRAME_AT" \
                 -s 1280x720  -minrate 1024k -vb 2048k -maxrate 3072k -bufsize 8192k \
                 -threads "$THREADS" \
