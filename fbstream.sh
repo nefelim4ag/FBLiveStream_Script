@@ -42,13 +42,31 @@ case "$1" in
                 [ -d  /run/fbstream ] && grep -R . /run/fbstream
                 exit 0
         ;;
+        reset)
+                for conf in "${CONFIGS[@]}"; do
+                        {
+                                source $conf
+                                # Delete all live videos
+                                LIVE_VIDEOS=(
+                                        $(CURL_GET_W "https://graph.facebook.com/$RESOURCE_ID/live_videos?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
+                                )
+                                for id in "${LIVE_VIDEOS[@]}"; do
+                                        CURL_DELETE_W "https://graph.facebook.com/$id"
+                                done
+                        }
+                done
+                exit 0
+        ;;
         *)
                 echo "help:"
-                echo "  daemon"
-                echo "  status"
+                echo "  daemon - start script as a daemon"
+                echo "  status - show status/info files"
+                echo "  reset  - delete all live streams"
                 exit 0
         ;;
 esac
+
+find /run/fbstream/ -type f -delete
 
 mkdir -p /run/fbstream/
 
@@ -61,10 +79,9 @@ for conf in "${CONFIGS[@]}"; do
         }
 done
 
-TMP_FILE="$(mktemp)"
-
 for conf in "${CONFIGS[@]}"; do
         {
+                TMP_FILE="$(mktemp)"
                 source $conf
 
                 WORK_DIR=$(GET_MD5SUM $ACCESS_TOKEN)
@@ -200,7 +217,7 @@ cleanup(){
         CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "end_live_video=true" | jq .
         CURL_DELETE_W "https://graph.facebook.com/$VIDEO_ID" | jq .
 
-        # Delete all posts
+        # Delete all live videos
         LIVE_VIDEOS=(
                 $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/live_videos?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
         )
