@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 INFO(){ echo "INFO: $*"; }
 ERRO(){ echo "ERRO: $*"; exit 1; }
@@ -104,8 +104,6 @@ stream_start(){
                 if grep -q "$STREAM_NAME" "$stream"; then
                         USE_STREAM="$stream"
                         break;
-                else
-                        :
                 fi
         done
 
