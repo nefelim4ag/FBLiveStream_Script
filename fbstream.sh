@@ -18,6 +18,8 @@ for cmd in curl jq ffmpeg; do
         command -v $cmd &> /dev/null || ERRO "Missing $cmd"
 done
 
+[ -d "/etc/fbstream" ] || ERRO "Missing: /etc/fbstream" 
+
 CONFIGS=(
         $(find /etc/fbstream -type f -name "*.conf")
 )
@@ -25,6 +27,11 @@ CONFIGS=(
 for conf in "${CONFIGS[@]}"; do
         INFO "Find conf: $conf"
 done
+
+GET_MD5SUM(){ echo "$@" | md5sum | cut -d ' ' -f1; }
+
+CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
+CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
 
 case "$1" in
         daemon)
@@ -43,13 +50,6 @@ case "$1" in
 esac
 
 mkdir -p /run/fbstream/
-
-CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
-CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
-
-GET_MD5SUM(){
-        echo "$@" | md5sum | cut -d ' ' -f1
-}
 
 stream_start(){
         CONF="$1"
@@ -87,7 +87,7 @@ stream_start(){
 
                 # Delete all posts
                 POSTS=(
-                        $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/feed?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
+                        $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/live_videos?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
                 )
                 for id in "${POSTS[@]}"; do
                         CURL_DELETE_W "https://graph.facebook.com/$id"
