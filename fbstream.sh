@@ -58,8 +58,8 @@ stream_start(){
         [ -z "$ACCESS_TOKEN" ] && ERRO "ACCESS_TOKEN can't be empty"
 
         TMP_FILE="$(mktemp)"
-        MD5=$(GET_MD5SUM $ACCESS_TOKEN)
-        RUN_FILE="/run/fbstream/${STREAM_NAME}_${MD5}"
+        MD5=$(GET_MD5SUM ${STREAM_NAME} ${ACCESS_TOKEN})
+        RUN_FILE="/run/fbstream/${MD5}"
         touch "$RUN_FILE"
 
         # Get Live URL & etc
