@@ -78,11 +78,24 @@ for conf in "${CONFIGS[@]}"; do
                         LIVE_STREAM_COUNT=$((LIVE_STREAM_COUNT - 1))
                         for i in $(seq 0 $LIVE_STREAM_COUNT); do
                                 ID="$(cat $TMP_FILE | jq .data[$i].id -r)"
-                                MD5=$(GET_MD5SUM $TITLE)
+                                [ "$ID" == "null" ] && continue
+
                                 cat $TMP_FILE | jq .data[$i] -r > "$WORK_DIR/$ID"
                                 TITLE="$(jq .title $WORK_DIR/$ID)"
                                 STATUS="$(jq .status $WORK_DIR/$ID)"
                                 INFO "Found existing live stream: $TITLE | $ID | $STATUS"
+                        done
+
+                        INFO "Try GC Old Streams"
+                        for ID in $WORK_DIR/*; do
+                                TITLE="$(jq .title $ID)"
+                                grep -R "$TITLE" $WORK_DIR | cut -d':' -f1 | head -n -1 | \
+                                while read -r path; do
+                                        ID="$(basename $path)"
+                                        INFO "Delete live video: ID"
+                                        CURL_DELETE_W "https://graph.facebook.com/$ID" | jq .
+                                        rm -v "$path"
+                                done
                         done
                 fi
         }
