@@ -88,6 +88,7 @@ for conf in "${CONFIGS[@]}"; do
 
                         INFO "Try GC Old Streams"
                         for ID in $WORK_DIR/*; do
+                                [ -f  "$ID" ] || continue
                                 TITLE="$(jq .title $ID)"
                                 grep -R "$TITLE" $WORK_DIR | cut -d':' -f1 | head -n -1 | \
                                 while read -r path; do
