@@ -18,7 +18,7 @@ for cmd in curl jq ffmpeg; do
         command -v $cmd &> /dev/null || ERRO "Missing $cmd"
 done
 
-[ -d "/etc/fbstream" ] || ERRO "Missing: /etc/fbstream" 
+[ -d "/etc/fbstream" ] || ERRO "Missing: /etc/fbstream"
 
 CONFIGS=(
         $(find /etc/fbstream -type f -name "*.conf")
@@ -30,6 +30,7 @@ done
 
 GET_MD5SUM(){ echo "$@" | md5sum | cut -d ' ' -f1; }
 
+CURL_GET_W(){    cutl -s -X GET "$@"; }
 CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
 CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
 
@@ -51,22 +52,77 @@ esac
 
 mkdir -p /run/fbstream/
 
+for conf in "${CONFIGS[@]}"; do
+        {
+                source $conf
+                WORK_DIR=$(GET_MD5SUM $ACCESS_TOKEN)
+                WORK_DIR="/run/fbstream/$WORK_DIR"
+                mkdir -vp "$WORK_DIR"
+        }
+done
+
+TMP_FILE="$(mktemp)"
+
+for conf in "${CONFIGS[@]}"; do
+        {
+                source $conf
+
+                WORK_DIR=$(GET_MD5SUM $ACCESS_TOKEN)
+                WORK_DIR="/run/fbstream/$WORK_DIR"
+
+                CURL_GET_W "https://graph.facebook.com/me/live_videos?access_token=$ACCESS_TOKEN" | jq . > "$TMP_FILE"
+
+                LIVE_STREAM_COUNT=$(grep -c stream_url "$TMP_FILE")
+
+                if ((LIVE_STREAM_COUNT > 0)); then
+                        LIVE_STREAM_COUNT=$((LIVE_STREAM_COUNT - 1))
+                        for i in $(seq 0 $LIVE_STREAM_COUNT); do
+                                ID="$(cat $TMP_FILE | jq .data[$i].ID -r)"
+                                MD5=$(GET_MD5SUM $TITLE)
+                                cat $TMP_FILE | jq .data[$i] -r > "$WORK_DIR/$ID"
+                                TITLE="$(jq .title $WORK_DIR/$ID)"
+                                STATUS="$(jq .status $WORK_DIR/$ID)"
+                                INFO "Found: $TITLE | $ID | $STATUS"
+                        done
+                fi
+        }
+done
+
 stream_start(){
         CONF="$1"
         source "$CONF"
 
         [ -z "$ACCESS_TOKEN" ] && ERRO "ACCESS_TOKEN can't be empty"
 
+        WORK_DIR=$(GET_MD5SUM $ACCESS_TOKEN)
+        WORK_DIR="/run/fbstream/$WORK_DIR"
+
+        USE_STREAM=""
+
+        for stream in $WORK_DIR/*; do
+                [ -f "$stream" ] || continue
+                if grep -q "$STREAM_NAME" "$stream"; then
+                        USE_STREAM="$stream"
+                        break;
+                else
+                        :
+                fi
+        done
+
         TMP_FILE="$(mktemp)"
         MD5=$(GET_MD5SUM ${STREAM_NAME} ${ACCESS_TOKEN})
         RUN_FILE="/run/fbstream/${MD5}"
         touch "$RUN_FILE"
 
-        # Get Live URL & etc
-        CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
-                -F "title=$STREAM_NAME" \
-                -F "stream_type=AMBIENT" \
-                -F "status=UNPUBLISHED" > $TMP_FILE
+        if [ -z "$USE_STREAM" ]; then
+                # Get Live URL & etc
+                CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
+                        -F "title=$STREAM_NAME" \
+                        -F "stream_type=AMBIENT" \
+                        -F "status=UNPUBLISHED" > $TMP_FILE
+        else
+                cat "$USE_STREAM" > "$TMP_FILE"
+        fi
 
         jq . $TMP_FILE
         VIDEO_ID="$(jq .id -r $TMP_FILE)"
@@ -86,10 +142,10 @@ stream_start(){
                 CURL_DELETE_W "https://graph.facebook.com/$VIDEO_ID" | jq .
 
                 # Delete all posts
-                POSTS=(
+                LIVE_VIDEOS=(
                         $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/live_videos?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
                 )
-                for id in "${POSTS[@]}"; do
+                for id in "${LIVE_VIDEOS[@]}"; do
                         CURL_DELETE_W "https://graph.facebook.com/$id"
                 done
         }
