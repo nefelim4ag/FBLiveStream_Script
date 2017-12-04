@@ -22,18 +22,27 @@ CONFIGS=(
         $(find /etc/fbstream -type f -name "*.conf")
 )
 
-mkdir -p /run/fbstream/
-
 for conf in "${CONFIGS[@]}"; do
         INFO "Find conf: $conf"
 done
 
 case "$1" in
+        daemon)
+                [ -z $NOTIFY_SOCKET ] && ERRO "Must be runned as systemd service"
+        ;;
         status)
-                grep -R . /run/fbstream
+                [ -d  /run/fbstream ] && grep -R . /run/fbstream
+                exit 0
+        ;;
+        *)
+                echo "help:"
+                echo "  daemon"
+                echo "  status"
                 exit 0
         ;;
 esac
+
+mkdir -p /run/fbstream/
 
 CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
 CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
