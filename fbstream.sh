@@ -66,7 +66,7 @@ case "$1" in
         ;;
 esac
 
-find /run/fbstream/ -type f -delete
+find /run/fbstream/ -type f -delete -cmin +120
 
 mkdir -p /run/fbstream/
 
@@ -140,9 +140,6 @@ stream_start(){
         done
 
         TMP_FILE="$(mktemp)"
-        MD5=$(GET_MD5SUM ${STREAM_NAME} ${ACCESS_TOKEN})
-        RUN_FILE="/run/fbstream/${MD5}"
-        touch "$RUN_FILE"
 
         if [ -z "$USE_STREAM" ]; then
                 # Get Live URL & etc
@@ -158,13 +155,6 @@ stream_start(){
         VIDEO_ID="$(jq .id -r $TMP_FILE)"
         STREAM_URL="$(jq .stream_url -r $TMP_FILE)"
         rm -f "$TMP_FILE"
-
-        {
-                echo ACCESS_TOKEN="$ACCESS_TOKEN"
-                echo STREAM_NAME="$STREAM_NAME"
-                echo VIDEO_ID="$VIDEO_ID"
-                echo STREAM_URL="$STREAM_URL"
-        } > "$RUN_FILE"
 
         {
                 INFO "--- START ---"
@@ -207,6 +197,13 @@ post_checker(){
 }
 
 post_checker &
+
+auto_restart(){
+        sleep 3600
+        killall ffmpeg
+}
+
+auto_restart &
 
 wait
 
