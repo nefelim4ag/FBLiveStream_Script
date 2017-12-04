@@ -179,6 +179,17 @@ done
 
 systemd-notify --ready
 
+auto_restart(){
+        sleep 3600
+        killall ffmpeg
+}
+
+auto_restart &
+
+wait
+
+exit 0
+
 post_checker(){
         while :; do
                 for conf in "${CONFIGS[@]}"; do
@@ -197,17 +208,6 @@ post_checker(){
 }
 
 post_checker &
-
-auto_restart(){
-        sleep 3600
-        killall ffmpeg
-}
-
-auto_restart &
-
-wait
-
-exit 0
 
 # Define auto cleanup on exit
 cleanup(){
