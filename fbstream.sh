@@ -82,7 +82,7 @@ for conf in "${CONFIGS[@]}"; do
                                 cat $TMP_FILE | jq .data[$i] -r > "$WORK_DIR/$ID"
                                 TITLE="$(jq .title $WORK_DIR/$ID)"
                                 STATUS="$(jq .status $WORK_DIR/$ID)"
-                                INFO "Found: $TITLE | $ID | $STATUS"
+                                INFO "Found existing live stream: $TITLE | $ID | $STATUS"
                         done
                 fi
         }
@@ -102,6 +102,7 @@ stream_start(){
         for stream in $WORK_DIR/*; do
                 [ -f "$stream" ] || continue
                 if grep -q "$STREAM_NAME" "$stream"; then
+                        INFO "Use existing: $stream"
                         USE_STREAM="$stream"
                         break;
                 fi
@@ -133,21 +134,6 @@ stream_start(){
                 echo VIDEO_ID="$VIDEO_ID"
                 echo STREAM_URL="$STREAM_URL"
         } > "$RUN_FILE"
-
-        # Define auto cleanup on exit
-        cleanup(){
-                CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "end_live_video=true" | jq .
-                CURL_DELETE_W "https://graph.facebook.com/$VIDEO_ID" | jq .
-
-                # Delete all posts
-                LIVE_VIDEOS=(
-                        $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/live_videos?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
-                )
-                for id in "${LIVE_VIDEOS[@]}"; do
-                        CURL_DELETE_W "https://graph.facebook.com/$id"
-                done
-        }
-        trap cleanup SIGINT SIGTERM EXIT
 
         {
                 INFO "--- START ---"
@@ -194,3 +180,18 @@ post_checker &
 wait
 
 exit 0
+
+# Define auto cleanup on exit
+cleanup(){
+        CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "end_live_video=true" | jq .
+        CURL_DELETE_W "https://graph.facebook.com/$VIDEO_ID" | jq .
+
+        # Delete all posts
+        LIVE_VIDEOS=(
+                $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/live_videos?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
+        )
+        for id in "${LIVE_VIDEOS[@]}"; do
+                CURL_DELETE_W "https://graph.facebook.com/$id"
+        done
+}
+trap cleanup SIGINT SIGTERM EXIT
