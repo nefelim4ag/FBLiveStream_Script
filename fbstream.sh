@@ -77,7 +77,7 @@ for conf in "${CONFIGS[@]}"; do
                 if ((LIVE_STREAM_COUNT > 0)); then
                         LIVE_STREAM_COUNT=$((LIVE_STREAM_COUNT - 1))
                         for i in $(seq 0 $LIVE_STREAM_COUNT); do
-                                ID="$(cat $TMP_FILE | jq .data[$i].ID -r)"
+                                ID="$(cat $TMP_FILE | jq .data[$i].id -r)"
                                 MD5=$(GET_MD5SUM $TITLE)
                                 cat $TMP_FILE | jq .data[$i] -r > "$WORK_DIR/$ID"
                                 TITLE="$(jq .title $WORK_DIR/$ID)"
