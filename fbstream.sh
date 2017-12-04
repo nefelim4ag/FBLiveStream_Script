@@ -47,6 +47,10 @@ mkdir -p /run/fbstream/
 CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
 CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
 
+GET_MD5SUM(){
+        echo "$@" | md5sum | cut -d ' ' -f1
+}
+
 stream_start(){
         CONF="$1"
         source "$CONF"
@@ -54,7 +58,8 @@ stream_start(){
         [ -z "$ACCESS_TOKEN" ] && ERRO "ACCESS_TOKEN can't be empty"
 
         TMP_FILE="$(mktemp)"
-        RUN_FILE="/run/fbstream/${STREAM_NAME}_${ACCESS_TOKEN}"
+        MD5=$(GET_MD5SUM $ACCESS_TOKEN)
+        RUN_FILE="/run/fbstream/${STREAM_NAME}_${MD5}"
         touch "$RUN_FILE"
 
         # Get Live URL & etc
