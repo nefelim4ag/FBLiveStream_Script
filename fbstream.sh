@@ -30,7 +30,7 @@ done
 
 GET_MD5SUM(){ echo "$@" | md5sum | cut -d ' ' -f1; }
 
-CURL_GET_W(){    cutl -s -X GET "$@"; }
+CURL_GET_W(){    curl -s -X GET "$@"; }
 CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
 CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
 
