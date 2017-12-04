@@ -55,6 +55,7 @@ stream_start(){
 
         TMP_FILE="$(mktemp)"
         RUN_FILE="/run/fbstream/${STREAM_NAME}_${ACCESS_TOKEN}"
+        touch "$RUN_FILE"
 
         # Get Live URL & etc
         CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
@@ -72,7 +73,7 @@ stream_start(){
                 echo STREAM_NAME="$STREAM_NAME"
                 echo VIDEO_ID="$VIDEO_ID"
                 echo STREAM_URL="$STREAM_URL"
-        } > $RUN_FILE
+        } > "$RUN_FILE"
 
         # Define auto cleanup on exit
         cleanup(){
