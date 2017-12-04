@@ -84,6 +84,25 @@ done
 
 systemd-notify --ready
 
+post_checker(){
+        while :; do
+                for conf in "${CONFIGS[@]}"; do
+                        sleep 5
+                        source "$conf"
+                        POSTS=(
+                                $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/feed?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
+                        )
+                        if (( ${#POSTS[@]} == 0)); then
+                                killall ffmpeg
+                                exit 0
+                        fi
+                done
+                sleep 30
+        done
+}
+
+post_checker &
+
 wait
 
 exit 0
