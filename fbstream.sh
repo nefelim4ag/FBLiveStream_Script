@@ -42,6 +42,8 @@ stream_start(){
         CONF="$1"
         source "$CONF"
 
+        [ -z "$ACCESS_TOKEN" ] && ERRO "ACCESS_TOKEN can't be empty"
+
         RUN_FILE="/run/fbstream/${STREAM_NAME}_${ACCESS_TOKEN}"
 
         # Get Live URL & etc
