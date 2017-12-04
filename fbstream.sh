@@ -39,7 +39,12 @@ case "$1" in
                 [ -z $NOTIFY_SOCKET ] && ERRO "Must be runned as systemd service"
         ;;
         status)
-                [ -d  /run/fbstream ] && grep -R . /run/fbstream
+                [ -d  /run/fbstream ] || ERRO "FBStream not running"
+                for live_video_id in /run/fbstream/*/*; do
+                        [ -f "$live_video_id" ] || continue
+                        echo "${live_video_id}:"
+                        jq . "$live_video_id"
+                done
                 exit 0
         ;;
         reset)
