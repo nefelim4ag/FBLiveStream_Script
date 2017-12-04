@@ -22,9 +22,18 @@ CONFIGS=(
         $(find /etc/fbstream -type f -name "*.conf")
 )
 
+mkdir -p /run/fbstream/
+
 for conf in "${CONFIGS[@]}"; do
         INFO "Find conf: $conf"
 done
+
+case "$1" in
+        status)
+                grep -R . /run/fbstream
+                exit 0
+        ;;
+esac
 
 CURL_POST_W(){   curl -s -X POST   -F "access_token=$ACCESS_TOKEN" "$@"; }
 CURL_DELETE_W(){ curl -s -X DELETE -F "access_token=$ACCESS_TOKEN" "$@"; }
@@ -33,7 +42,7 @@ stream_start(){
         CONF="$1"
         source "$CONF"
 
-        TMP_FILE="$(mktemp)"
+        RUN_FILE="/run/fbstream/${STREAM_NAME}_${ACCESS_TOKEN}"
 
         # Get Live URL & etc
         CURL_POST_W "https://graph.facebook.com/$RESOURCE_ID/live_videos" \
@@ -45,6 +54,13 @@ stream_start(){
         VIDEO_ID="$(jq .id -r $TMP_FILE)"
         STREAM_URL="$(jq .stream_url -r $TMP_FILE)"
         rm -f "$TMP_FILE"
+
+        {
+                echo ACCESS_TOKEN="$ACCESS_TOKEN"
+                echo STREAM_NAME="$STREAM_NAME"
+                echo VIDEO_ID="$VIDEO_ID"
+                echo STREAM_URL="$STREAM_URL"
+        } > $RUN_FILE
 
         # Define auto cleanup on exit
         cleanup(){
@@ -92,7 +108,7 @@ post_checker(){
                         POSTS=(
                                 $(curl -s -X GET "https://graph.facebook.com/$RESOURCE_ID/feed?access_token=$ACCESS_TOKEN" | jq -r '.data[].id')
                         )
-                        if (( ${#POSTS[@]} == 0)); then
+                        if (( ${#POSTS[@]} == 0 )); then
                                 killall ffmpeg
                                 exit 0
                         fi
