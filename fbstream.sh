@@ -169,6 +169,10 @@ stream_start(){
                 echo "--- END ---"
         } &
 
+        PID=$!
+
+        echo $PID > $WORK_DIR/${VIDEO_ID}.pid
+
         # Mark stream as Active
         sleep 3
         CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW" | jq .
@@ -184,12 +188,21 @@ done
 
 systemd-notify --ready
 
-auto_restart(){
-        sleep 3600
+watchdog(){
+        for i in {0..1200}; do
+                sleep 3
+                LIVE=0
+                find /run/fbstream/ -type f -name "*.pid" | \
+                while read -r pid_file; do
+                        read PID < $pid_file
+                        [ -d /proc/$PID ] && LIVE=$((LIVE+1))
+                done
+                ((LIVE == 0)) && break
+        done
         killall ffmpeg
 }
 
-auto_restart &
+watchdog &
 
 wait
 
