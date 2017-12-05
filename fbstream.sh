@@ -198,7 +198,7 @@ watchdog(){
         PIDS=( $(find /run/fbstream/ -type f -name "*.pid" -exec cat {} \;) )
         find /run/fbstream/ -type f -name "*.pid" -delete
         for i in {0..360}; do
-                INFO "Check at: $((i*5))/3600s"
+                INFO "Check at: $((i*10))/3600s"
                 sleep 10
                 echo 0 > $LIVE_FILE
                 for PID in "${PIDS[@]}"; do
