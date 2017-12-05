@@ -191,6 +191,7 @@ systemd-notify --ready
 watchdog(){
         MAIN_PID="$1"
         INFO "Start watchdog, autorestart in 3600s"
+        export LIVE
         for i in {0..720}; do
                 INFO "Check at: $((i*5))/3600s"
                 sleep 5
@@ -200,7 +201,7 @@ watchdog(){
                         read PID < $pid_file
                         [ -d /proc/$PID ] && LIVE=$((LIVE+1))
                 done
-                if ((LIVE == 0)); then
+                if (($LIVE < 1)); then
                         INFO "All streams dead, killall ffmpeg, kill main script"
                         break
                 fi
