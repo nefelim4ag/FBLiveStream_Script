@@ -206,7 +206,7 @@ watchdog(){
                         [ -d /proc/$PID ] && echo $((LIVE+1)) > $LIVE_FILE
                 done
                 read LIVE < $LIVE_FILE
-                if (($LIVE < 1)); then
+                if ((LIVE == 0)); then
                         INFO "All streams dead, killall ffmpeg, kill main script"
                         break
                 fi
