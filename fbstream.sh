@@ -168,7 +168,7 @@ stream_start(){
                 INFO "--- START ---"
                 INFO "Source URL: $SOURCE_URL"
                 INFO "Target URL: $STREAM_URL"
-                run_stream "$SOURCE_URL" "$STREAM_URL"
+                run_stream "$SOURCE_URL" "$STREAM_URL" 2>&1 | grep -iv blob
                 echo "--- END ---"
         } &
 
