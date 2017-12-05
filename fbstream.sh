@@ -85,8 +85,6 @@ for conf in "${CONFIGS[@]}"; do
         }
 done
 
-find /run/fbstream/ -type f -delete -cmin +120
-
 for conf in "${CONFIGS[@]}"; do
         {
                 TMP_FILE="$(mktemp)"
@@ -126,6 +124,8 @@ for conf in "${CONFIGS[@]}"; do
                 fi
         }
 done
+
+find /run/fbstream/ -type f -delete -cmin +10
 
 stream_start(){
         CONF="$1"
