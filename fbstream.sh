@@ -40,6 +40,9 @@ case "$1" in
         ;;
         status)
                 [ -d  /run/fbstream ] || ERRO "FBStream not running"
+                LIVE_FILE=/run/fbstream/LIVE_COUNT
+                read LIVE < $LIVE_FILE
+                INFO "Live streams: $LIVE"
                 for live_video_id in /run/fbstream/*/*; do
                         [ -f "$live_video_id" ] || continue
                         echo "${live_video_id}:"
