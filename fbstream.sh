@@ -186,7 +186,7 @@ stream_start(){
 # Start all streams
 for conf in "${CONFIGS[@]}"; do
         stream_start "$conf" &
-        sleep 5
+        sleep 10
 done
 
 systemd-notify --ready
@@ -195,13 +195,13 @@ watchdog(){
         MAIN_PID="$1"
         INFO "Start watchdog, autorestart in 3600s"
         LIVE_FILE=/run/fbstream/LIVE_COUNT
-        for i in {0..720}; do
+        PIDS=( $(find /run/fbstream/ -type f -name "*.pid" -exec cat {} \;) )
+        find /run/fbstream/ -type f -name "*.pid" -delete
+        for i in {0..360}; do
                 INFO "Check at: $((i*5))/3600s"
-                sleep 5
+                sleep 10
                 echo 0 > $LIVE_FILE
-                find /run/fbstream/ -type f -name "*.pid" | \
-                while read -r pid_file; do
-                        read PID  < $pid_file
+                for PID in "${PIDS[@]}"; do
                         read LIVE < $LIVE_FILE
                         [ -d /proc/$PID ] && echo $((LIVE+1)) > $LIVE_FILE
                 done
