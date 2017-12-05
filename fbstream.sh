@@ -183,7 +183,7 @@ stream_start(){
 # Start all streams
 for conf in "${CONFIGS[@]}"; do
         stream_start "$conf" &
-        sleep 3
+        sleep 5
 done
 
 systemd-notify --ready
