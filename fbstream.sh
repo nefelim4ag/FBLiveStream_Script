@@ -191,16 +191,18 @@ systemd-notify --ready
 watchdog(){
         MAIN_PID="$1"
         INFO "Start watchdog, autorestart in 3600s"
-        export LIVE
+        LIVE_FILE=/run/fbstream/LIVE_COUNT
         for i in {0..720}; do
                 INFO "Check at: $((i*5))/3600s"
                 sleep 5
-                LIVE=0
+                echo 0 > $LIVE_FILE
                 find /run/fbstream/ -type f -name "*.pid" | \
                 while read -r pid_file; do
-                        read PID < $pid_file
-                        [ -d /proc/$PID ] && LIVE=$((LIVE+1))
+                        read PID  < $pid_file
+                        read LIVE < $LIVE_FILE
+                        [ -d /proc/$PID ] && echo $((LIVE+1)) > $LIVE_FILE
                 done
+                read LIVE < $LIVE_FILE
                 if (($LIVE < 1)); then
                         INFO "All streams dead, killall ffmpeg, kill main script"
                         break
