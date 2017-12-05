@@ -71,8 +71,6 @@ case "$1" in
         ;;
 esac
 
-find /run/fbstream/ -type f -delete -cmin +120
-
 mkdir -p /run/fbstream/
 
 for conf in "${CONFIGS[@]}"; do
@@ -83,6 +81,8 @@ for conf in "${CONFIGS[@]}"; do
                 mkdir -vp "$WORK_DIR"
         }
 done
+
+find /run/fbstream/ -type f -delete -cmin +120
 
 for conf in "${CONFIGS[@]}"; do
         {
