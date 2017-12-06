@@ -118,10 +118,21 @@ for conf in "${CONFIGS[@]}"; do
                                 grep -R "$TITLE" $WORK_DIR | cut -d':' -f1 | head -n -1 | \
                                 while read -r path; do
                                         ID="$(basename $path)"
-                                        INFO "Delete live video: ID"
+                                        INFO "Delete live video: $ID"
                                         CURL_DELETE_W "https://graph.facebook.com/$ID" | jq .
                                         rm -v "$path"
                                 done
+                        done
+                        INFO "Try GC stream with status: LIVE_STOPPED"
+                        for path in $WORK_DIR/*; do
+                                [ -f  "$path" ] || continue
+                                STATUS="$(jq .status $path)"
+                                if [ "$STATUS" == "LIVE_STOPPED" ]; then
+                                        ID="$(basename $path)"
+                                        INFO "Delete live video: $ID"
+                                        CURL_DELETE_W "https://graph.facebook.com/$ID" | jq .
+                                        rm -v "$path"
+                                fi
                         done
                 fi
         }
