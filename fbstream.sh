@@ -126,8 +126,8 @@ for conf in "${CONFIGS[@]}"; do
                         INFO "Try GC stream with status: LIVE_STOPPED"
                         for path in $WORK_DIR/*; do
                                 [ -f  "$path" ] || continue
-                                STATUS="$(jq .status $path)"
-                                if [ "$STATUS" == "LIVE_STOPPED" ]; then
+                                STATUS="$(jq -r .status $path)"
+                                if [[ "$STATUS" == "LIVE_STOPPED" ]]; then
                                         ID="$(basename $path)"
                                         INFO "Delete live video: $ID"
                                         CURL_DELETE_W "https://graph.facebook.com/$ID" | jq .
