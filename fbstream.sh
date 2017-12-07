@@ -95,6 +95,12 @@ for conf in "${CONFIGS[@]}"; do
                 WORK_DIR=$(GET_MD5SUM $ACCESS_TOKEN)
                 WORK_DIR="/run/fbstream/$WORK_DIR"
 
+                # Try ressurect old streams
+                CURL_GET_W "https://graph.facebook.com/me/live_videos?access_token=$ACCESS_TOKEN" | jq -r .data[]. | \
+                while read -r VIDEO_ID; do
+                        CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW"
+                done
+
                 CURL_GET_W "https://graph.facebook.com/me/live_videos?access_token=$ACCESS_TOKEN" | jq . > "$TMP_FILE"
 
                 LIVE_STREAM_COUNT=$(grep -c stream_url "$TMP_FILE")
