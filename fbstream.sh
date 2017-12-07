@@ -99,7 +99,9 @@ for conf in "${CONFIGS[@]}"; do
                 # Try ressurect old streams
                 CURL_GET_W "https://graph.facebook.com/me/live_videos?access_token=$ACCESS_TOKEN" | jq -r .data[].id | \
                 while read -r VIDEO_ID; do
+                        echo -n "INFO: Try ressurect - "
                         CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW"
+                        echo
                 done
 
                 CURL_GET_W "https://graph.facebook.com/me/live_videos?access_token=$ACCESS_TOKEN" | jq . > "$TMP_FILE"
