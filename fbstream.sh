@@ -96,7 +96,7 @@ for conf in "${CONFIGS[@]}"; do
                 WORK_DIR="/run/fbstream/$WORK_DIR"
 
                 # Try ressurect old streams
-                CURL_GET_W "https://graph.facebook.com/me/live_videos?access_token=$ACCESS_TOKEN" | jq -r .data[]. | \
+                CURL_GET_W "https://graph.facebook.com/me/live_videos?access_token=$ACCESS_TOKEN" | jq -r .data[].id | \
                 while read -r VIDEO_ID; do
                         CURL_POST_W "https://graph.facebook.com/$VIDEO_ID" -F "status=LIVE_NOW"
                 done
